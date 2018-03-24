@@ -740,88 +740,90 @@ class PyBuildExt(build_ext):
         exts.append( Extension('audioop', ['audioop.c'],
                                libraries=math_libs) )
 
-        # readline
-        do_readline = self.compiler.find_library_file(lib_dirs, 'readline')
-        readline_termcap_library = ""
-        curses_library = ""
-        # Cannot use os.popen here in py3k.
-        tmpfile = os.path.join(self.build_temp, 'readline_termcap_lib')
-        if not os.path.exists(self.build_temp):
-            os.makedirs(self.build_temp)
-        # Determine if readline is already linked against curses or tinfo.
-        if do_readline:
-            if cross_compiling:
-                ret = os.system("%s -d %s | grep '(NEEDED)' > %s" \
-                                % (sysconfig.get_config_var('READELF'),
-                                   do_readline, tmpfile))
-            elif find_executable('ldd'):
-                ret = os.system("ldd %s > %s" % (do_readline, tmpfile))
-            else:
-                ret = 256
-            if ret >> 8 == 0:
-                with open(tmpfile) as fp:
-                    for ln in fp:
-                        if 'curses' in ln:
-                            readline_termcap_library = re.sub(
-                                r'.*lib(n?cursesw?)\.so.*', r'\1', ln
-                            ).rstrip()
-                            break
-                        # termcap interface split out from ncurses
-                        if 'tinfo' in ln:
-                            readline_termcap_library = 'tinfo'
-                            break
-            if os.path.exists(tmpfile):
-                os.unlink(tmpfile)
-        # Issue 7384: If readline is already linked against curses,
-        # use the same library for the readline and curses modules.
-        if 'curses' in readline_termcap_library:
-            curses_library = readline_termcap_library
-        elif self.compiler.find_library_file(lib_dirs, 'ncursesw'):
-            curses_library = 'ncursesw'
-        elif self.compiler.find_library_file(lib_dirs, 'ncurses'):
-            curses_library = 'ncurses'
-        elif self.compiler.find_library_file(lib_dirs, 'curses'):
-            curses_library = 'curses'
+        # # readline
+        # do_readline = self.compiler.find_library_file(lib_dirs, 'readline')
+        # readline_termcap_library = ""
+        # curses_library = ""
+        # # Cannot use os.popen here in py3k.
+        # tmpfile = os.path.join(self.build_temp, 'readline_termcap_lib')
+        # if not os.path.exists(self.build_temp):
+        #     os.makedirs(self.build_temp)
+        # # Determine if readline is already linked against curses or tinfo.
+        # if do_readline:
+        #     if cross_compiling:
+        #         ret = os.system("%s -d %s | grep '(NEEDED)' > %s" \
+        #                         % (sysconfig.get_config_var('READELF'),
+        #                            do_readline, tmpfile))
+        #     elif find_executable('ldd'):
+        #         ret = os.system("ldd %s > %s" % (do_readline, tmpfile))
+        #     else:
+        #         ret = 256
+        #     if ret >> 8 == 0:
+        #         with open(tmpfile) as fp:
+        #             for ln in fp:
+        #                 if 'curses' in ln:
+        #                     readline_termcap_library = re.sub(
+        #                         r'.*lib(n?cursesw?)\.so.*', r'\1', ln
+        #                     ).rstrip()
+        #                     break
+        #                 # termcap interface split out from ncurses
+        #                 if 'tinfo' in ln:
+        #                     readline_termcap_library = 'tinfo'
+        #                     break
+        #     if os.path.exists(tmpfile):
+        #         os.unlink(tmpfile)
+        # # Issue 7384: If readline is already linked against curses,
+        # # use the same library for the readline and curses modules.
+        # if 'curses' in readline_termcap_library:
+        #     curses_library = readline_termcap_library
+        # elif self.compiler.find_library_file(lib_dirs, 'ncursesw'):
+        #     curses_library = 'ncursesw'
+        # elif self.compiler.find_library_file(lib_dirs, 'ncurses'):
+        #     curses_library = 'ncurses'
+        # elif self.compiler.find_library_file(lib_dirs, 'curses'):
+        #     curses_library = 'curses'
+        #
+        # if host_platform == 'darwin':
+        #     os_release = int(os.uname()[2].split('.')[0])
+        #     dep_target = sysconfig.get_config_var('MACOSX_DEPLOYMENT_TARGET')
+        #     if (dep_target and
+        #             (tuple(int(n) for n in dep_target.split('.')[0:2])
+        #                 < (10, 5) ) ):
+        #         os_release = 8
+        #     if os_release < 9:
+        #         # MacOSX 10.4 has a broken readline. Don't try to build
+        #         # the readline module unless the user has installed a fixed
+        #         # readline package
+        #         if find_file('readline/rlconf.h', inc_dirs, []) is None:
+        #             do_readline = False
+        # if do_readline:
+        #     if host_platform == 'darwin' and os_release < 9:
+        #         # In every directory on the search path search for a dynamic
+        #         # library and then a static library, instead of first looking
+        #         # for dynamic libraries on the entire path.
+        #         # This way a statically linked custom readline gets picked up
+        #         # before the (possibly broken) dynamic library in /usr/lib.
+        #         readline_extra_link_args = ('-Wl,-search_paths_first',)
+        #     else:
+        #         readline_extra_link_args = ()
+        #
+        #     readline_libs = ['readline']
+        #     if readline_termcap_library:
+        #         pass # Issue 7384: Already linked against curses or tinfo.
+        #     elif curses_library:
+        #         readline_libs.append(curses_library)
+        #     elif self.compiler.find_library_file(lib_dirs +
+        #                                              ['/usr/lib/termcap'],
+        #                                              'termcap'):
+        #         readline_libs.append('termcap')
+        #     exts.append( Extension('readline', ['readline.c'],
+        #                            library_dirs=['/usr/lib/termcap'],
+        #                            extra_link_args=readline_extra_link_args,
+        #                            libraries=readline_libs) )
+        # else:
+        #     missing.append('readline')
 
-        if host_platform == 'darwin':
-            os_release = int(os.uname()[2].split('.')[0])
-            dep_target = sysconfig.get_config_var('MACOSX_DEPLOYMENT_TARGET')
-            if (dep_target and
-                    (tuple(int(n) for n in dep_target.split('.')[0:2])
-                        < (10, 5) ) ):
-                os_release = 8
-            if os_release < 9:
-                # MacOSX 10.4 has a broken readline. Don't try to build
-                # the readline module unless the user has installed a fixed
-                # readline package
-                if find_file('readline/rlconf.h', inc_dirs, []) is None:
-                    do_readline = False
-        if do_readline:
-            if host_platform == 'darwin' and os_release < 9:
-                # In every directory on the search path search for a dynamic
-                # library and then a static library, instead of first looking
-                # for dynamic libraries on the entire path.
-                # This way a statically linked custom readline gets picked up
-                # before the (possibly broken) dynamic library in /usr/lib.
-                readline_extra_link_args = ('-Wl,-search_paths_first',)
-            else:
-                readline_extra_link_args = ()
-
-            readline_libs = ['readline']
-            if readline_termcap_library:
-                pass # Issue 7384: Already linked against curses or tinfo.
-            elif curses_library:
-                readline_libs.append(curses_library)
-            elif self.compiler.find_library_file(lib_dirs +
-                                                     ['/usr/lib/termcap'],
-                                                     'termcap'):
-                readline_libs.append('termcap')
-            exts.append( Extension('readline', ['readline.c'],
-                                   library_dirs=['/usr/lib/termcap'],
-                                   extra_link_args=readline_extra_link_args,
-                                   libraries=readline_libs) )
-        else:
-            missing.append('readline')
+        missing.append('readline')
 
         # crypt module.
 
@@ -840,75 +842,88 @@ class PyBuildExt(build_ext):
         # socket(2)
         exts.append( Extension('_socket', ['socketmodule.c'],
                                depends = ['socketmodule.h']) )
-        # Detect SSL support for the socket module (via _ssl)
-        search_for_ssl_incs_in = [
-                              '/usr/local/ssl/include',
-                              '/usr/contrib/ssl/include/'
-                             ]
-        ssl_incs = find_file('openssl/ssl.h', inc_dirs,
-                             search_for_ssl_incs_in
-                             )
-        if ssl_incs is not None:
-            krb5_h = find_file('krb5.h', inc_dirs,
-                               ['/usr/kerberos/include'])
-            if krb5_h:
-                ssl_incs += krb5_h
-        ssl_libs = find_library_file(self.compiler, 'ssl',lib_dirs,
-                                     ['/usr/local/ssl/lib',
-                                      '/usr/contrib/ssl/lib/'
-                                     ] )
 
-        if (ssl_incs is not None and
-            ssl_libs is not None):
-            exts.append( Extension('_ssl', ['_ssl.c'],
-                                   include_dirs = ssl_incs,
-                                   library_dirs = ssl_libs,
-                                   libraries = ['ssl', 'crypto'],
-                                   depends = ['socketmodule.h']), )
-        else:
-            missing.append('_ssl')
+        # # Detect SSL support for the socket module (via _ssl)
+        # search_for_ssl_incs_in = [
+        #                       '/usr/local/ssl/include',
+        #                       '/usr/contrib/ssl/include/'
+        #                      ]
+        # ssl_incs = find_file('openssl/ssl.h', inc_dirs,
+        #                      search_for_ssl_incs_in
+        #                      )
+        # if ssl_incs is not None:
+        #     krb5_h = find_file('krb5.h', inc_dirs,
+        #                        ['/usr/kerberos/include'])
+        #     if krb5_h:
+        #         ssl_incs += krb5_h
+        # ssl_libs = find_library_file(self.compiler, 'ssl',lib_dirs,
+        #                              ['/usr/local/ssl/lib',
+        #                               '/usr/contrib/ssl/lib/'
+        #                              ] )
+        #
+        # if (ssl_incs is not None and
+        #     ssl_libs is not None):
+        #     exts.append( Extension('_ssl', ['_ssl.c'],
+        #                            include_dirs = ssl_incs,
+        #                            library_dirs = ssl_libs,
+        #                            libraries = ['ssl', 'crypto'],
+        #                            depends = ['socketmodule.h']), )
+        # else:
+        #     missing.append('_ssl')
+        #
+        # # find out which version of OpenSSL we have
+        # openssl_ver = 0
+        # openssl_ver_re = re.compile(
+        #     r'^\s*#\s*define\s+OPENSSL_VERSION_NUMBER\s+(0x[0-9a-fA-F]+)' )
+        #
+        # # look for the openssl version header on the compiler search path.
+        # opensslv_h = find_file('openssl/opensslv.h', [],
+        #         inc_dirs + search_for_ssl_incs_in)
+        # if opensslv_h:
+        #     name = os.path.join(opensslv_h[0], 'openssl/opensslv.h')
+        #     if host_platform == 'darwin' and is_macosx_sdk_path(name):
+        #         name = os.path.join(macosx_sdk_root(), name[1:])
+        #     try:
+        #         with open(name, 'r') as incfile:
+        #             for line in incfile:
+        #                 m = openssl_ver_re.match(line)
+        #                 if m:
+        #                     openssl_ver = int(m.group(1), 16)
+        #                     break
+        #     except IOError as msg:
+        #         print("IOError while reading opensshv.h:", msg)
+        #
+        # #print('openssl_ver = 0x%08x' % openssl_ver)
+        # min_openssl_ver = 0x00907000
+        # have_any_openssl = ssl_incs is not None and ssl_libs is not None
+        # have_usable_openssl = (have_any_openssl and
+        #                        openssl_ver >= min_openssl_ver)
+        #
+        # if have_any_openssl:
+        #     if have_usable_openssl:
+        #         # The _hashlib module wraps optimized implementations
+        #         # of hash functions from the OpenSSL library.
+        #         exts.append( Extension('_hashlib', ['_hashopenssl.c'],
+        #                                depends = ['hashlib.h'],
+        #                                include_dirs = ssl_incs,
+        #                                library_dirs = ssl_libs,
+        #                                libraries = ['ssl', 'crypto']) )
+        #     else:
+        #         print("warning: openssl 0x%08x is too old for _hashlib" %
+        #               openssl_ver)
+        #         missing.append('_hashlib')
 
-        # find out which version of OpenSSL we have
-        openssl_ver = 0
-        openssl_ver_re = re.compile(
-            r'^\s*#\s*define\s+OPENSSL_VERSION_NUMBER\s+(0x[0-9a-fA-F]+)' )
 
-        # look for the openssl version header on the compiler search path.
-        opensslv_h = find_file('openssl/opensslv.h', [],
-                inc_dirs + search_for_ssl_incs_in)
-        if opensslv_h:
-            name = os.path.join(opensslv_h[0], 'openssl/opensslv.h')
-            if host_platform == 'darwin' and is_macosx_sdk_path(name):
-                name = os.path.join(macosx_sdk_root(), name[1:])
-            try:
-                with open(name, 'r') as incfile:
-                    for line in incfile:
-                        m = openssl_ver_re.match(line)
-                        if m:
-                            openssl_ver = int(m.group(1), 16)
-                            break
-            except IOError as msg:
-                print("IOError while reading opensshv.h:", msg)
+        exts.append(Extension('_ssl', ['_ssl.c'],
+                              extra_compile_args=["-I", os.environ["SSL_INCLUDE"]],
+                              extra_link_args=(os.environ["SSL_LIB"], os.environ["SSL_CRYPTO_LIB"]),
+                              depends = ['socketmodule.h']))
 
-        #print('openssl_ver = 0x%08x' % openssl_ver)
-        min_openssl_ver = 0x00907000
-        have_any_openssl = ssl_incs is not None and ssl_libs is not None
-        have_usable_openssl = (have_any_openssl and
-                               openssl_ver >= min_openssl_ver)
 
-        if have_any_openssl:
-            if have_usable_openssl:
-                # The _hashlib module wraps optimized implementations
-                # of hash functions from the OpenSSL library.
-                exts.append( Extension('_hashlib', ['_hashopenssl.c'],
-                                       depends = ['hashlib.h'],
-                                       include_dirs = ssl_incs,
-                                       library_dirs = ssl_libs,
-                                       libraries = ['ssl', 'crypto']) )
-            else:
-                print("warning: openssl 0x%08x is too old for _hashlib" %
-                      openssl_ver)
-                missing.append('_hashlib')
+        exts.append(Extension('_hashlib', ['_hashopenssl.c'],
+                              extra_compile_args=["-I", os.environ["SSL_INCLUDE"]],
+                              extra_link_args=(os.environ["SSL_LIB"], os.environ["SSL_CRYPTO_LIB"]),
+                              depends = ['hashlib.h']))
 
         # We always compile these even when OpenSSL is available (issue #14693).
         # It's harmless and the object code is tiny (40-50 KB per module,
@@ -948,412 +963,416 @@ class PyBuildExt(build_ext):
                                ['_sha3/sha3module.c'],
                                depends=sha3_deps))
 
-        # Modules that provide persistent dictionary-like semantics.  You will
-        # probably want to arrange for at least one of them to be available on
-        # your machine, though none are defined by default because of library
-        # dependencies.  The Python module dbm/__init__.py provides an
-        # implementation independent wrapper for these; dbm/dumb.py provides
-        # similar functionality (but slower of course) implemented in Python.
-
-        # Sleepycat^WOracle Berkeley DB interface.
-        #  http://www.oracle.com/database/berkeley-db/db/index.html
+        # # Modules that provide persistent dictionary-like semantics.  You will
+        # # probably want to arrange for at least one of them to be available on
+        # # your machine, though none are defined by default because of library
+        # # dependencies.  The Python module dbm/__init__.py provides an
+        # # implementation independent wrapper for these; dbm/dumb.py provides
+        # # similar functionality (but slower of course) implemented in Python.
         #
-        # This requires the Sleepycat^WOracle DB code. The supported versions
-        # are set below.  Visit the URL above to download
-        # a release.  Most open source OSes come with one or more
-        # versions of BerkeleyDB already installed.
+        # # Sleepycat^WOracle Berkeley DB interface.
+        # #  http://www.oracle.com/database/berkeley-db/db/index.html
+        # #
+        # # This requires the Sleepycat^WOracle DB code. The supported versions
+        # # are set below.  Visit the URL above to download
+        # # a release.  Most open source OSes come with one or more
+        # # versions of BerkeleyDB already installed.
+        #
+        # max_db_ver = (5, 3)
+        # min_db_ver = (3, 3)
+        # db_setup_debug = False   # verbose debug prints from this script?
+        #
+        # def allow_db_ver(db_ver):
+        #     """Returns a boolean if the given BerkeleyDB version is acceptable.
+        #
+        #     Args:
+        #       db_ver: A tuple of the version to verify.
+        #     """
+        #     if not (min_db_ver <= db_ver <= max_db_ver):
+        #         return False
+        #     return True
+        #
+        # def gen_db_minor_ver_nums(major):
+        #     if major == 4:
+        #         for x in range(max_db_ver[1]+1):
+        #             if allow_db_ver((4, x)):
+        #                 yield x
+        #     elif major == 3:
+        #         for x in (3,):
+        #             if allow_db_ver((3, x)):
+        #                 yield x
+        #     else:
+        #         raise ValueError("unknown major BerkeleyDB version", major)
+        #
+        # # construct a list of paths to look for the header file in on
+        # # top of the normal inc_dirs.
+        # db_inc_paths = [
+        #     '/usr/include/db4',
+        #     '/usr/local/include/db4',
+        #     '/opt/sfw/include/db4',
+        #     '/usr/include/db3',
+        #     '/usr/local/include/db3',
+        #     '/opt/sfw/include/db3',
+        #     # Fink defaults (http://fink.sourceforge.net/)
+        #     '/sw/include/db4',
+        #     '/sw/include/db3',
+        # ]
+        # # 4.x minor number specific paths
+        # for x in gen_db_minor_ver_nums(4):
+        #     db_inc_paths.append('/usr/include/db4%d' % x)
+        #     db_inc_paths.append('/usr/include/db4.%d' % x)
+        #     db_inc_paths.append('/usr/local/BerkeleyDB.4.%d/include' % x)
+        #     db_inc_paths.append('/usr/local/include/db4%d' % x)
+        #     db_inc_paths.append('/pkg/db-4.%d/include' % x)
+        #     db_inc_paths.append('/opt/db-4.%d/include' % x)
+        #     # MacPorts default (http://www.macports.org/)
+        #     db_inc_paths.append('/opt/local/include/db4%d' % x)
+        # # 3.x minor number specific paths
+        # for x in gen_db_minor_ver_nums(3):
+        #     db_inc_paths.append('/usr/include/db3%d' % x)
+        #     db_inc_paths.append('/usr/local/BerkeleyDB.3.%d/include' % x)
+        #     db_inc_paths.append('/usr/local/include/db3%d' % x)
+        #     db_inc_paths.append('/pkg/db-3.%d/include' % x)
+        #     db_inc_paths.append('/opt/db-3.%d/include' % x)
+        #
+        # if cross_compiling:
+        #     db_inc_paths = []
+        #
+        # # Add some common subdirectories for Sleepycat DB to the list,
+        # # based on the standard include directories. This way DB3/4 gets
+        # # picked up when it is installed in a non-standard prefix and
+        # # the user has added that prefix into inc_dirs.
+        # std_variants = []
+        # for dn in inc_dirs:
+        #     std_variants.append(os.path.join(dn, 'db3'))
+        #     std_variants.append(os.path.join(dn, 'db4'))
+        #     for x in gen_db_minor_ver_nums(4):
+        #         std_variants.append(os.path.join(dn, "db4%d"%x))
+        #         std_variants.append(os.path.join(dn, "db4.%d"%x))
+        #     for x in gen_db_minor_ver_nums(3):
+        #         std_variants.append(os.path.join(dn, "db3%d"%x))
+        #         std_variants.append(os.path.join(dn, "db3.%d"%x))
+        #
+        # db_inc_paths = std_variants + db_inc_paths
+        # db_inc_paths = [p for p in db_inc_paths if os.path.exists(p)]
+        #
+        # db_ver_inc_map = {}
+        #
+        # if host_platform == 'darwin':
+        #     sysroot = macosx_sdk_root()
+        #
+        # class db_found(Exception): pass
+        # try:
+        #     # See whether there is a Sleepycat header in the standard
+        #     # search path.
+        #     for d in inc_dirs + db_inc_paths:
+        #         f = os.path.join(d, "db.h")
+        #         if host_platform == 'darwin' and is_macosx_sdk_path(d):
+        #             f = os.path.join(sysroot, d[1:], "db.h")
+        #
+        #         if db_setup_debug: print("db: looking for db.h in", f)
+        #         if os.path.exists(f):
+        #             with open(f, 'rb') as file:
+        #                 f = file.read()
+        #             m = re.search(br"#define\WDB_VERSION_MAJOR\W(\d+)", f)
+        #             if m:
+        #                 db_major = int(m.group(1))
+        #                 m = re.search(br"#define\WDB_VERSION_MINOR\W(\d+)", f)
+        #                 db_minor = int(m.group(1))
+        #                 db_ver = (db_major, db_minor)
+        #
+        #                 # Avoid 4.6 prior to 4.6.21 due to a BerkeleyDB bug
+        #                 if db_ver == (4, 6):
+        #                     m = re.search(br"#define\WDB_VERSION_PATCH\W(\d+)", f)
+        #                     db_patch = int(m.group(1))
+        #                     if db_patch < 21:
+        #                         print("db.h:", db_ver, "patch", db_patch,
+        #                               "being ignored (4.6.x must be >= 4.6.21)")
+        #                         continue
+        #
+        #                 if ( (db_ver not in db_ver_inc_map) and
+        #                     allow_db_ver(db_ver) ):
+        #                     # save the include directory with the db.h version
+        #                     # (first occurrence only)
+        #                     db_ver_inc_map[db_ver] = d
+        #                     if db_setup_debug:
+        #                         print("db.h: found", db_ver, "in", d)
+        #                 else:
+        #                     # we already found a header for this library version
+        #                     if db_setup_debug: print("db.h: ignoring", d)
+        #             else:
+        #                 # ignore this header, it didn't contain a version number
+        #                 if db_setup_debug:
+        #                     print("db.h: no version number version in", d)
+        #
+        #     db_found_vers = list(db_ver_inc_map.keys())
+        #     db_found_vers.sort()
+        #
+        #     while db_found_vers:
+        #         db_ver = db_found_vers.pop()
+        #         db_incdir = db_ver_inc_map[db_ver]
+        #
+        #         # check lib directories parallel to the location of the header
+        #         db_dirs_to_check = [
+        #             db_incdir.replace("include", 'lib64'),
+        #             db_incdir.replace("include", 'lib'),
+        #         ]
+        #
+        #         if host_platform != 'darwin':
+        #             db_dirs_to_check = list(filter(os.path.isdir, db_dirs_to_check))
+        #
+        #         else:
+        #             # Same as other branch, but takes OSX SDK into account
+        #             tmp = []
+        #             for dn in db_dirs_to_check:
+        #                 if is_macosx_sdk_path(dn):
+        #                     if os.path.isdir(os.path.join(sysroot, dn[1:])):
+        #                         tmp.append(dn)
+        #                 else:
+        #                     if os.path.isdir(dn):
+        #                         tmp.append(dn)
+        #             db_dirs_to_check = tmp
+        #
+        #             db_dirs_to_check = tmp
+        #
+        #         # Look for a version specific db-X.Y before an ambiguous dbX
+        #         # XXX should we -ever- look for a dbX name?  Do any
+        #         # systems really not name their library by version and
+        #         # symlink to more general names?
+        #         for dblib in (('db-%d.%d' % db_ver),
+        #                       ('db%d%d' % db_ver),
+        #                       ('db%d' % db_ver[0])):
+        #             dblib_file = self.compiler.find_library_file(
+        #                             db_dirs_to_check + lib_dirs, dblib )
+        #             if dblib_file:
+        #                 dblib_dir = [ os.path.abspath(os.path.dirname(dblib_file)) ]
+        #                 raise db_found
+        #             else:
+        #                 if db_setup_debug: print("db lib: ", dblib, "not found")
+        #
+        # except db_found:
+        #     if db_setup_debug:
+        #         print("bsddb using BerkeleyDB lib:", db_ver, dblib)
+        #         print("bsddb lib dir:", dblib_dir, " inc dir:", db_incdir)
+        #     dblibs = [dblib]
+        #     # Only add the found library and include directories if they aren't
+        #     # already being searched. This avoids an explicit runtime library
+        #     # dependency.
+        #     if db_incdir in inc_dirs:
+        #         db_incs = None
+        #     else:
+        #         db_incs = [db_incdir]
+        #     if dblib_dir[0] in lib_dirs:
+        #         dblib_dir = None
+        # else:
+        #     if db_setup_debug: print("db: no appropriate library found")
+        #     db_incs = None
+        #     dblibs = []
+        #     dblib_dir = None
+        #
+        # # The sqlite interface
+        # sqlite_setup_debug = False   # verbose debug prints from this script?
+        #
+        # # We hunt for #define SQLITE_VERSION "n.n.n"
+        # # We need to find >= sqlite version 3.0.8
+        # sqlite_incdir = sqlite_libdir = None
+        # sqlite_inc_paths = [ '/usr/include',
+        #                      '/usr/include/sqlite',
+        #                      '/usr/include/sqlite3',
+        #                      '/usr/local/include',
+        #                      '/usr/local/include/sqlite',
+        #                      '/usr/local/include/sqlite3',
+        #                      ]
+        # if cross_compiling:
+        #     sqlite_inc_paths = []
+        # MIN_SQLITE_VERSION_NUMBER = (3, 0, 8)
+        # MIN_SQLITE_VERSION = ".".join([str(x)
+        #                             for x in MIN_SQLITE_VERSION_NUMBER])
+        #
+        # # Scan the default include directories before the SQLite specific
+        # # ones. This allows one to override the copy of sqlite on OSX,
+        # # where /usr/include contains an old version of sqlite.
+        # if host_platform == 'darwin':
+        #     sysroot = macosx_sdk_root()
+        #
+        # for d_ in inc_dirs + sqlite_inc_paths:
+        #     d = d_
+        #     if host_platform == 'darwin' and is_macosx_sdk_path(d):
+        #         d = os.path.join(sysroot, d[1:])
+        #
+        #     f = os.path.join(d, "sqlite3.h")
+        #     if os.path.exists(f):
+        #         if sqlite_setup_debug: print("sqlite: found %s"%f)
+        #         with open(f) as file:
+        #             incf = file.read()
+        #         m = re.search(
+        #             r'\s*.*#\s*.*define\s.*SQLITE_VERSION\W*"([\d\.]*)"', incf)
+        #         if m:
+        #             sqlite_version = m.group(1)
+        #             sqlite_version_tuple = tuple([int(x)
+        #                                 for x in sqlite_version.split(".")])
+        #             if sqlite_version_tuple >= MIN_SQLITE_VERSION_NUMBER:
+        #                 # we win!
+        #                 if sqlite_setup_debug:
+        #                     print("%s/sqlite3.h: version %s"%(d, sqlite_version))
+        #                 sqlite_incdir = d
+        #                 break
+        #             else:
+        #                 if sqlite_setup_debug:
+        #                     print("%s: version %d is too old, need >= %s"%(d,
+        #                                 sqlite_version, MIN_SQLITE_VERSION))
+        #         elif sqlite_setup_debug:
+        #             print("sqlite: %s had no SQLITE_VERSION"%(f,))
+        #
+        # if sqlite_incdir:
+        #     sqlite_dirs_to_check = [
+        #         os.path.join(sqlite_incdir, '..', 'lib64'),
+        #         os.path.join(sqlite_incdir, '..', 'lib'),
+        #         os.path.join(sqlite_incdir, '..', '..', 'lib64'),
+        #         os.path.join(sqlite_incdir, '..', '..', 'lib'),
+        #     ]
+        #     sqlite_libfile = self.compiler.find_library_file(
+        #                         sqlite_dirs_to_check + lib_dirs, 'sqlite3')
+        #     if sqlite_libfile:
+        #         sqlite_libdir = [os.path.abspath(os.path.dirname(sqlite_libfile))]
+        #
+        # if sqlite_incdir and sqlite_libdir:
+        #     sqlite_srcs = ['_sqlite/cache.c',
+        #         '_sqlite/connection.c',
+        #         '_sqlite/cursor.c',
+        #         '_sqlite/microprotocols.c',
+        #         '_sqlite/module.c',
+        #         '_sqlite/prepare_protocol.c',
+        #         '_sqlite/row.c',
+        #         '_sqlite/statement.c',
+        #         '_sqlite/util.c', ]
+        #
+        #     sqlite_defines = []
+        #     if host_platform != "win32":
+        #         sqlite_defines.append(('MODULE_NAME', '"sqlite3"'))
+        #     else:
+        #         sqlite_defines.append(('MODULE_NAME', '\\"sqlite3\\"'))
+        #
+        #     # Enable support for loadable extensions in the sqlite3 module
+        #     # if --enable-loadable-sqlite-extensions configure option is used.
+        #     if '--enable-loadable-sqlite-extensions' not in sysconfig.get_config_var("CONFIG_ARGS"):
+        #         sqlite_defines.append(("SQLITE_OMIT_LOAD_EXTENSION", "1"))
+        #
+        #     if host_platform == 'darwin':
+        #         # In every directory on the search path search for a dynamic
+        #         # library and then a static library, instead of first looking
+        #         # for dynamic libraries on the entire path.
+        #         # This way a statically linked custom sqlite gets picked up
+        #         # before the dynamic library in /usr/lib.
+        #         sqlite_extra_link_args = ('-Wl,-search_paths_first',)
+        #     else:
+        #         sqlite_extra_link_args = ()
+        #
+        #     include_dirs = ["Modules/_sqlite"]
+        #     # Only include the directory where sqlite was found if it does
+        #     # not already exist in set include directories, otherwise you
+        #     # can end up with a bad search path order.
+        #     if sqlite_incdir not in self.compiler.include_dirs:
+        #         include_dirs.append(sqlite_incdir)
+        #     # avoid a runtime library path for a system library dir
+        #     if sqlite_libdir and sqlite_libdir[0] in lib_dirs:
+        #         sqlite_libdir = None
+        #     exts.append(Extension('_sqlite3', sqlite_srcs,
+        #                           define_macros=sqlite_defines,
+        #                           include_dirs=include_dirs,
+        #                           library_dirs=sqlite_libdir,
+        #                           extra_link_args=sqlite_extra_link_args,
+        #                           libraries=["sqlite3",]))
+        # else:
+        #     missing.append('_sqlite3')
+        #
+        # dbm_setup_debug = False   # verbose debug prints from this script?
+        # dbm_order = ['gdbm']
+        # # The standard Unix dbm module:
+        # if host_platform not in ['cygwin']:
+        #     config_args = [arg.strip("'")
+        #                    for arg in sysconfig.get_config_var("CONFIG_ARGS").split()]
+        #     dbm_args = [arg for arg in config_args
+        #                 if arg.startswith('--with-dbmliborder=')]
+        #     if dbm_args:
+        #         dbm_order = [arg.split('=')[-1] for arg in dbm_args][-1].split(":")
+        #     else:
+        #         dbm_order = "ndbm:gdbm:bdb".split(":")
+        #     dbmext = None
+        #     for cand in dbm_order:
+        #         if cand == "ndbm":
+        #             if find_file("ndbm.h", inc_dirs, []) is not None:
+        #                 # Some systems have -lndbm, others have -lgdbm_compat,
+        #                 # others don't have either
+        #                 if self.compiler.find_library_file(lib_dirs,
+        #                                                        'ndbm'):
+        #                     ndbm_libs = ['ndbm']
+        #                 elif self.compiler.find_library_file(lib_dirs,
+        #                                                      'gdbm_compat'):
+        #                     ndbm_libs = ['gdbm_compat']
+        #                 else:
+        #                     ndbm_libs = []
+        #                 if dbm_setup_debug: print("building dbm using ndbm")
+        #                 dbmext = Extension('_dbm', ['_dbmmodule.c'],
+        #                                    define_macros=[
+        #                                        ('HAVE_NDBM_H',None),
+        #                                        ],
+        #                                    libraries=ndbm_libs)
+        #                 break
+        #
+        #         elif cand == "gdbm":
+        #             if self.compiler.find_library_file(lib_dirs, 'gdbm'):
+        #                 gdbm_libs = ['gdbm']
+        #                 if self.compiler.find_library_file(lib_dirs,
+        #                                                        'gdbm_compat'):
+        #                     gdbm_libs.append('gdbm_compat')
+        #                 if find_file("gdbm/ndbm.h", inc_dirs, []) is not None:
+        #                     if dbm_setup_debug: print("building dbm using gdbm")
+        #                     dbmext = Extension(
+        #                         '_dbm', ['_dbmmodule.c'],
+        #                         define_macros=[
+        #                             ('HAVE_GDBM_NDBM_H', None),
+        #                             ],
+        #                         libraries = gdbm_libs)
+        #                     break
+        #                 if find_file("gdbm-ndbm.h", inc_dirs, []) is not None:
+        #                     if dbm_setup_debug: print("building dbm using gdbm")
+        #                     dbmext = Extension(
+        #                         '_dbm', ['_dbmmodule.c'],
+        #                         define_macros=[
+        #                             ('HAVE_GDBM_DASH_NDBM_H', None),
+        #                             ],
+        #                         libraries = gdbm_libs)
+        #                     break
+        #         elif cand == "bdb":
+        #             if dblibs:
+        #                 if dbm_setup_debug: print("building dbm using bdb")
+        #                 dbmext = Extension('_dbm', ['_dbmmodule.c'],
+        #                                    library_dirs=dblib_dir,
+        #                                    runtime_library_dirs=dblib_dir,
+        #                                    include_dirs=db_incs,
+        #                                    define_macros=[
+        #                                        ('HAVE_BERKDB_H', None),
+        #                                        ('DB_DBM_HSEARCH', None),
+        #                                        ],
+        #                                    libraries=dblibs)
+        #                 break
+        #     if dbmext is not None:
+        #         exts.append(dbmext)
+        #     else:
+        #         missing.append('_dbm')
+        #
+        # # Anthony Baxter's gdbm module.  GNU dbm(3) will require -lgdbm:
+        # if ('gdbm' in dbm_order and
+        #     self.compiler.find_library_file(lib_dirs, 'gdbm')):
+        #     exts.append( Extension('_gdbm', ['_gdbmmodule.c'],
+        #                            libraries = ['gdbm'] ) )
+        # else:
+        #     missing.append('_gdbm')
 
-        max_db_ver = (5, 3)
-        min_db_ver = (3, 3)
-        db_setup_debug = False   # verbose debug prints from this script?
-
-        def allow_db_ver(db_ver):
-            """Returns a boolean if the given BerkeleyDB version is acceptable.
-
-            Args:
-              db_ver: A tuple of the version to verify.
-            """
-            if not (min_db_ver <= db_ver <= max_db_ver):
-                return False
-            return True
-
-        def gen_db_minor_ver_nums(major):
-            if major == 4:
-                for x in range(max_db_ver[1]+1):
-                    if allow_db_ver((4, x)):
-                        yield x
-            elif major == 3:
-                for x in (3,):
-                    if allow_db_ver((3, x)):
-                        yield x
-            else:
-                raise ValueError("unknown major BerkeleyDB version", major)
-
-        # construct a list of paths to look for the header file in on
-        # top of the normal inc_dirs.
-        db_inc_paths = [
-            '/usr/include/db4',
-            '/usr/local/include/db4',
-            '/opt/sfw/include/db4',
-            '/usr/include/db3',
-            '/usr/local/include/db3',
-            '/opt/sfw/include/db3',
-            # Fink defaults (http://fink.sourceforge.net/)
-            '/sw/include/db4',
-            '/sw/include/db3',
-        ]
-        # 4.x minor number specific paths
-        for x in gen_db_minor_ver_nums(4):
-            db_inc_paths.append('/usr/include/db4%d' % x)
-            db_inc_paths.append('/usr/include/db4.%d' % x)
-            db_inc_paths.append('/usr/local/BerkeleyDB.4.%d/include' % x)
-            db_inc_paths.append('/usr/local/include/db4%d' % x)
-            db_inc_paths.append('/pkg/db-4.%d/include' % x)
-            db_inc_paths.append('/opt/db-4.%d/include' % x)
-            # MacPorts default (http://www.macports.org/)
-            db_inc_paths.append('/opt/local/include/db4%d' % x)
-        # 3.x minor number specific paths
-        for x in gen_db_minor_ver_nums(3):
-            db_inc_paths.append('/usr/include/db3%d' % x)
-            db_inc_paths.append('/usr/local/BerkeleyDB.3.%d/include' % x)
-            db_inc_paths.append('/usr/local/include/db3%d' % x)
-            db_inc_paths.append('/pkg/db-3.%d/include' % x)
-            db_inc_paths.append('/opt/db-3.%d/include' % x)
-
-        if cross_compiling:
-            db_inc_paths = []
-
-        # Add some common subdirectories for Sleepycat DB to the list,
-        # based on the standard include directories. This way DB3/4 gets
-        # picked up when it is installed in a non-standard prefix and
-        # the user has added that prefix into inc_dirs.
-        std_variants = []
-        for dn in inc_dirs:
-            std_variants.append(os.path.join(dn, 'db3'))
-            std_variants.append(os.path.join(dn, 'db4'))
-            for x in gen_db_minor_ver_nums(4):
-                std_variants.append(os.path.join(dn, "db4%d"%x))
-                std_variants.append(os.path.join(dn, "db4.%d"%x))
-            for x in gen_db_minor_ver_nums(3):
-                std_variants.append(os.path.join(dn, "db3%d"%x))
-                std_variants.append(os.path.join(dn, "db3.%d"%x))
-
-        db_inc_paths = std_variants + db_inc_paths
-        db_inc_paths = [p for p in db_inc_paths if os.path.exists(p)]
-
-        db_ver_inc_map = {}
-
-        if host_platform == 'darwin':
-            sysroot = macosx_sdk_root()
-
-        class db_found(Exception): pass
-        try:
-            # See whether there is a Sleepycat header in the standard
-            # search path.
-            for d in inc_dirs + db_inc_paths:
-                f = os.path.join(d, "db.h")
-                if host_platform == 'darwin' and is_macosx_sdk_path(d):
-                    f = os.path.join(sysroot, d[1:], "db.h")
-
-                if db_setup_debug: print("db: looking for db.h in", f)
-                if os.path.exists(f):
-                    with open(f, 'rb') as file:
-                        f = file.read()
-                    m = re.search(br"#define\WDB_VERSION_MAJOR\W(\d+)", f)
-                    if m:
-                        db_major = int(m.group(1))
-                        m = re.search(br"#define\WDB_VERSION_MINOR\W(\d+)", f)
-                        db_minor = int(m.group(1))
-                        db_ver = (db_major, db_minor)
-
-                        # Avoid 4.6 prior to 4.6.21 due to a BerkeleyDB bug
-                        if db_ver == (4, 6):
-                            m = re.search(br"#define\WDB_VERSION_PATCH\W(\d+)", f)
-                            db_patch = int(m.group(1))
-                            if db_patch < 21:
-                                print("db.h:", db_ver, "patch", db_patch,
-                                      "being ignored (4.6.x must be >= 4.6.21)")
-                                continue
-
-                        if ( (db_ver not in db_ver_inc_map) and
-                            allow_db_ver(db_ver) ):
-                            # save the include directory with the db.h version
-                            # (first occurrence only)
-                            db_ver_inc_map[db_ver] = d
-                            if db_setup_debug:
-                                print("db.h: found", db_ver, "in", d)
-                        else:
-                            # we already found a header for this library version
-                            if db_setup_debug: print("db.h: ignoring", d)
-                    else:
-                        # ignore this header, it didn't contain a version number
-                        if db_setup_debug:
-                            print("db.h: no version number version in", d)
-
-            db_found_vers = list(db_ver_inc_map.keys())
-            db_found_vers.sort()
-
-            while db_found_vers:
-                db_ver = db_found_vers.pop()
-                db_incdir = db_ver_inc_map[db_ver]
-
-                # check lib directories parallel to the location of the header
-                db_dirs_to_check = [
-                    db_incdir.replace("include", 'lib64'),
-                    db_incdir.replace("include", 'lib'),
-                ]
-
-                if host_platform != 'darwin':
-                    db_dirs_to_check = list(filter(os.path.isdir, db_dirs_to_check))
-
-                else:
-                    # Same as other branch, but takes OSX SDK into account
-                    tmp = []
-                    for dn in db_dirs_to_check:
-                        if is_macosx_sdk_path(dn):
-                            if os.path.isdir(os.path.join(sysroot, dn[1:])):
-                                tmp.append(dn)
-                        else:
-                            if os.path.isdir(dn):
-                                tmp.append(dn)
-                    db_dirs_to_check = tmp
-
-                    db_dirs_to_check = tmp
-
-                # Look for a version specific db-X.Y before an ambiguous dbX
-                # XXX should we -ever- look for a dbX name?  Do any
-                # systems really not name their library by version and
-                # symlink to more general names?
-                for dblib in (('db-%d.%d' % db_ver),
-                              ('db%d%d' % db_ver),
-                              ('db%d' % db_ver[0])):
-                    dblib_file = self.compiler.find_library_file(
-                                    db_dirs_to_check + lib_dirs, dblib )
-                    if dblib_file:
-                        dblib_dir = [ os.path.abspath(os.path.dirname(dblib_file)) ]
-                        raise db_found
-                    else:
-                        if db_setup_debug: print("db lib: ", dblib, "not found")
-
-        except db_found:
-            if db_setup_debug:
-                print("bsddb using BerkeleyDB lib:", db_ver, dblib)
-                print("bsddb lib dir:", dblib_dir, " inc dir:", db_incdir)
-            dblibs = [dblib]
-            # Only add the found library and include directories if they aren't
-            # already being searched. This avoids an explicit runtime library
-            # dependency.
-            if db_incdir in inc_dirs:
-                db_incs = None
-            else:
-                db_incs = [db_incdir]
-            if dblib_dir[0] in lib_dirs:
-                dblib_dir = None
-        else:
-            if db_setup_debug: print("db: no appropriate library found")
-            db_incs = None
-            dblibs = []
-            dblib_dir = None
-
-        # The sqlite interface
-        sqlite_setup_debug = False   # verbose debug prints from this script?
-
-        # We hunt for #define SQLITE_VERSION "n.n.n"
-        # We need to find >= sqlite version 3.0.8
-        sqlite_incdir = sqlite_libdir = None
-        sqlite_inc_paths = [ '/usr/include',
-                             '/usr/include/sqlite',
-                             '/usr/include/sqlite3',
-                             '/usr/local/include',
-                             '/usr/local/include/sqlite',
-                             '/usr/local/include/sqlite3',
-                             ]
-        if cross_compiling:
-            sqlite_inc_paths = []
-        MIN_SQLITE_VERSION_NUMBER = (3, 0, 8)
-        MIN_SQLITE_VERSION = ".".join([str(x)
-                                    for x in MIN_SQLITE_VERSION_NUMBER])
-
-        # Scan the default include directories before the SQLite specific
-        # ones. This allows one to override the copy of sqlite on OSX,
-        # where /usr/include contains an old version of sqlite.
-        if host_platform == 'darwin':
-            sysroot = macosx_sdk_root()
-
-        for d_ in inc_dirs + sqlite_inc_paths:
-            d = d_
-            if host_platform == 'darwin' and is_macosx_sdk_path(d):
-                d = os.path.join(sysroot, d[1:])
-
-            f = os.path.join(d, "sqlite3.h")
-            if os.path.exists(f):
-                if sqlite_setup_debug: print("sqlite: found %s"%f)
-                with open(f) as file:
-                    incf = file.read()
-                m = re.search(
-                    r'\s*.*#\s*.*define\s.*SQLITE_VERSION\W*"([\d\.]*)"', incf)
-                if m:
-                    sqlite_version = m.group(1)
-                    sqlite_version_tuple = tuple([int(x)
-                                        for x in sqlite_version.split(".")])
-                    if sqlite_version_tuple >= MIN_SQLITE_VERSION_NUMBER:
-                        # we win!
-                        if sqlite_setup_debug:
-                            print("%s/sqlite3.h: version %s"%(d, sqlite_version))
-                        sqlite_incdir = d
-                        break
-                    else:
-                        if sqlite_setup_debug:
-                            print("%s: version %d is too old, need >= %s"%(d,
-                                        sqlite_version, MIN_SQLITE_VERSION))
-                elif sqlite_setup_debug:
-                    print("sqlite: %s had no SQLITE_VERSION"%(f,))
-
-        if sqlite_incdir:
-            sqlite_dirs_to_check = [
-                os.path.join(sqlite_incdir, '..', 'lib64'),
-                os.path.join(sqlite_incdir, '..', 'lib'),
-                os.path.join(sqlite_incdir, '..', '..', 'lib64'),
-                os.path.join(sqlite_incdir, '..', '..', 'lib'),
-            ]
-            sqlite_libfile = self.compiler.find_library_file(
-                                sqlite_dirs_to_check + lib_dirs, 'sqlite3')
-            if sqlite_libfile:
-                sqlite_libdir = [os.path.abspath(os.path.dirname(sqlite_libfile))]
-
-        if sqlite_incdir and sqlite_libdir:
-            sqlite_srcs = ['_sqlite/cache.c',
-                '_sqlite/connection.c',
-                '_sqlite/cursor.c',
-                '_sqlite/microprotocols.c',
-                '_sqlite/module.c',
-                '_sqlite/prepare_protocol.c',
-                '_sqlite/row.c',
-                '_sqlite/statement.c',
-                '_sqlite/util.c', ]
-
-            sqlite_defines = []
-            if host_platform != "win32":
-                sqlite_defines.append(('MODULE_NAME', '"sqlite3"'))
-            else:
-                sqlite_defines.append(('MODULE_NAME', '\\"sqlite3\\"'))
-
-            # Enable support for loadable extensions in the sqlite3 module
-            # if --enable-loadable-sqlite-extensions configure option is used.
-            if '--enable-loadable-sqlite-extensions' not in sysconfig.get_config_var("CONFIG_ARGS"):
-                sqlite_defines.append(("SQLITE_OMIT_LOAD_EXTENSION", "1"))
-
-            if host_platform == 'darwin':
-                # In every directory on the search path search for a dynamic
-                # library and then a static library, instead of first looking
-                # for dynamic libraries on the entire path.
-                # This way a statically linked custom sqlite gets picked up
-                # before the dynamic library in /usr/lib.
-                sqlite_extra_link_args = ('-Wl,-search_paths_first',)
-            else:
-                sqlite_extra_link_args = ()
-
-            include_dirs = ["Modules/_sqlite"]
-            # Only include the directory where sqlite was found if it does
-            # not already exist in set include directories, otherwise you
-            # can end up with a bad search path order.
-            if sqlite_incdir not in self.compiler.include_dirs:
-                include_dirs.append(sqlite_incdir)
-            # avoid a runtime library path for a system library dir
-            if sqlite_libdir and sqlite_libdir[0] in lib_dirs:
-                sqlite_libdir = None
-            exts.append(Extension('_sqlite3', sqlite_srcs,
-                                  define_macros=sqlite_defines,
-                                  include_dirs=include_dirs,
-                                  library_dirs=sqlite_libdir,
-                                  extra_link_args=sqlite_extra_link_args,
-                                  libraries=["sqlite3",]))
-        else:
-            missing.append('_sqlite3')
-
-        dbm_setup_debug = False   # verbose debug prints from this script?
-        dbm_order = ['gdbm']
-        # The standard Unix dbm module:
-        if host_platform not in ['cygwin']:
-            config_args = [arg.strip("'")
-                           for arg in sysconfig.get_config_var("CONFIG_ARGS").split()]
-            dbm_args = [arg for arg in config_args
-                        if arg.startswith('--with-dbmliborder=')]
-            if dbm_args:
-                dbm_order = [arg.split('=')[-1] for arg in dbm_args][-1].split(":")
-            else:
-                dbm_order = "ndbm:gdbm:bdb".split(":")
-            dbmext = None
-            for cand in dbm_order:
-                if cand == "ndbm":
-                    if find_file("ndbm.h", inc_dirs, []) is not None:
-                        # Some systems have -lndbm, others have -lgdbm_compat,
-                        # others don't have either
-                        if self.compiler.find_library_file(lib_dirs,
-                                                               'ndbm'):
-                            ndbm_libs = ['ndbm']
-                        elif self.compiler.find_library_file(lib_dirs,
-                                                             'gdbm_compat'):
-                            ndbm_libs = ['gdbm_compat']
-                        else:
-                            ndbm_libs = []
-                        if dbm_setup_debug: print("building dbm using ndbm")
-                        dbmext = Extension('_dbm', ['_dbmmodule.c'],
-                                           define_macros=[
-                                               ('HAVE_NDBM_H',None),
-                                               ],
-                                           libraries=ndbm_libs)
-                        break
-
-                elif cand == "gdbm":
-                    if self.compiler.find_library_file(lib_dirs, 'gdbm'):
-                        gdbm_libs = ['gdbm']
-                        if self.compiler.find_library_file(lib_dirs,
-                                                               'gdbm_compat'):
-                            gdbm_libs.append('gdbm_compat')
-                        if find_file("gdbm/ndbm.h", inc_dirs, []) is not None:
-                            if dbm_setup_debug: print("building dbm using gdbm")
-                            dbmext = Extension(
-                                '_dbm', ['_dbmmodule.c'],
-                                define_macros=[
-                                    ('HAVE_GDBM_NDBM_H', None),
-                                    ],
-                                libraries = gdbm_libs)
-                            break
-                        if find_file("gdbm-ndbm.h", inc_dirs, []) is not None:
-                            if dbm_setup_debug: print("building dbm using gdbm")
-                            dbmext = Extension(
-                                '_dbm', ['_dbmmodule.c'],
-                                define_macros=[
-                                    ('HAVE_GDBM_DASH_NDBM_H', None),
-                                    ],
-                                libraries = gdbm_libs)
-                            break
-                elif cand == "bdb":
-                    if dblibs:
-                        if dbm_setup_debug: print("building dbm using bdb")
-                        dbmext = Extension('_dbm', ['_dbmmodule.c'],
-                                           library_dirs=dblib_dir,
-                                           runtime_library_dirs=dblib_dir,
-                                           include_dirs=db_incs,
-                                           define_macros=[
-                                               ('HAVE_BERKDB_H', None),
-                                               ('DB_DBM_HSEARCH', None),
-                                               ],
-                                           libraries=dblibs)
-                        break
-            if dbmext is not None:
-                exts.append(dbmext)
-            else:
-                missing.append('_dbm')
-
-        # Anthony Baxter's gdbm module.  GNU dbm(3) will require -lgdbm:
-        if ('gdbm' in dbm_order and
-            self.compiler.find_library_file(lib_dirs, 'gdbm')):
-            exts.append( Extension('_gdbm', ['_gdbmmodule.c'],
-                                   libraries = ['gdbm'] ) )
-        else:
-            missing.append('_gdbm')
+        missing.append('_dbm')
+        missing.append('_gdbm')
+        missing.append('_sqlite3')
 
         # Unix-only modules
         if host_platform != 'win32':
@@ -1362,155 +1381,174 @@ class PyBuildExt(build_ext):
             # Jeremy Hylton's rlimit interface
             exts.append( Extension('resource', ['resource.c']) )
 
-            # Sun yellow pages. Some systems have the functions in libc.
-            if (host_platform not in ['cygwin', 'qnx6'] and
-                find_file('rpcsvc/yp_prot.h', inc_dirs, []) is not None):
-                if (self.compiler.find_library_file(lib_dirs, 'nsl')):
-                    libs = ['nsl']
-                else:
-                    libs = []
-                exts.append( Extension('nis', ['nismodule.c'],
-                                       libraries = libs) )
-            else:
-                missing.append('nis')
+            # # Sun yellow pages. Some systems have the functions in libc.
+            # if (host_platform not in ['cygwin', 'qnx6'] and
+            #     find_file('rpcsvc/yp_prot.h', inc_dirs, []) is not None):
+            #     if (self.compiler.find_library_file(lib_dirs, 'nsl')):
+            #         libs = ['nsl']
+            #     else:
+            #         libs = []
+            #     exts.append( Extension('nis', ['nismodule.c'],
+            #                            libraries = libs) )
+            # else:
+            #     missing.append('nis')
+            missing.append('nis')
         else:
             missing.extend(['nis', 'resource', 'termios'])
 
-        # Curses support, requiring the System V version of curses, often
-        # provided by the ncurses library.
-        curses_defines = []
-        curses_includes = []
-        panel_library = 'panel'
-        if curses_library == 'ncursesw':
-            curses_defines.append(('HAVE_NCURSESW', '1'))
-            if not cross_compiling:
-                curses_includes.append('/usr/include/ncursesw')
-            # Bug 1464056: If _curses.so links with ncursesw,
-            # _curses_panel.so must link with panelw.
-            panel_library = 'panelw'
-            if host_platform == 'darwin':
-                # On OS X, there is no separate /usr/lib/libncursesw nor
-                # libpanelw.  If we are here, we found a locally-supplied
-                # version of libncursesw.  There should be also be a
-                # libpanelw.  _XOPEN_SOURCE defines are usually excluded
-                # for OS X but we need _XOPEN_SOURCE_EXTENDED here for
-                # ncurses wide char support
-                curses_defines.append(('_XOPEN_SOURCE_EXTENDED', '1'))
-        elif host_platform == 'darwin' and curses_library == 'ncurses':
-            # Building with the system-suppied combined libncurses/libpanel
-            curses_defines.append(('HAVE_NCURSESW', '1'))
-            curses_defines.append(('_XOPEN_SOURCE_EXTENDED', '1'))
-
-        if curses_library.startswith('ncurses'):
-            curses_libs = [curses_library]
-            exts.append( Extension('_curses', ['_cursesmodule.c'],
-                                   include_dirs=curses_includes,
-                                   define_macros=curses_defines,
-                                   libraries = curses_libs) )
-        elif curses_library == 'curses' and host_platform != 'darwin':
-                # OSX has an old Berkeley curses, not good enough for
-                # the _curses module.
-            if (self.compiler.find_library_file(lib_dirs, 'terminfo')):
-                curses_libs = ['curses', 'terminfo']
-            elif (self.compiler.find_library_file(lib_dirs, 'termcap')):
-                curses_libs = ['curses', 'termcap']
-            else:
-                curses_libs = ['curses']
-
-            exts.append( Extension('_curses', ['_cursesmodule.c'],
-                                   define_macros=curses_defines,
-                                   libraries = curses_libs) )
-        else:
-            missing.append('_curses')
-
-        # If the curses module is enabled, check for the panel module
-        if (module_enabled(exts, '_curses') and
-            self.compiler.find_library_file(lib_dirs, panel_library)):
-            exts.append( Extension('_curses_panel', ['_curses_panel.c'],
-                                   include_dirs=curses_includes,
-                                   define_macros=curses_defines,
-                                   libraries = [panel_library] + curses_libs) )
-        else:
-            missing.append('_curses_panel')
-
-        # Andrew Kuchling's zlib module.  Note that some versions of zlib
-        # 1.1.3 have security problems.  See CERT Advisory CA-2002-07:
-        # http://www.cert.org/advisories/CA-2002-07.html
+        # # Curses support, requiring the System V version of curses, often
+        # # provided by the ncurses library.
+        # curses_defines = []
+        # curses_includes = []
+        # panel_library = 'panel'
+        # if curses_library == 'ncursesw':
+        #     curses_defines.append(('HAVE_NCURSESW', '1'))
+        #     if not cross_compiling:
+        #         curses_includes.append('/usr/include/ncursesw')
+        #     # Bug 1464056: If _curses.so links with ncursesw,
+        #     # _curses_panel.so must link with panelw.
+        #     panel_library = 'panelw'
+        #     if host_platform == 'darwin':
+        #         # On OS X, there is no separate /usr/lib/libncursesw nor
+        #         # libpanelw.  If we are here, we found a locally-supplied
+        #         # version of libncursesw.  There should be also be a
+        #         # libpanelw.  _XOPEN_SOURCE defines are usually excluded
+        #         # for OS X but we need _XOPEN_SOURCE_EXTENDED here for
+        #         # ncurses wide char support
+        #         curses_defines.append(('_XOPEN_SOURCE_EXTENDED', '1'))
+        # elif host_platform == 'darwin' and curses_library == 'ncurses':
+        #     # Building with the system-suppied combined libncurses/libpanel
+        #     curses_defines.append(('HAVE_NCURSESW', '1'))
+        #     curses_defines.append(('_XOPEN_SOURCE_EXTENDED', '1'))
         #
-        # zlib 1.1.4 is fixed, but at least one vendor (RedHat) has decided to
-        # patch its zlib 1.1.3 package instead of upgrading to 1.1.4.  For
-        # now, we still accept 1.1.3, because we think it's difficult to
-        # exploit this in Python, and we'd rather make it RedHat's problem
-        # than our problem <wink>.
+        # if curses_library.startswith('ncurses'):
+        #     curses_libs = [curses_library]
+        #     exts.append( Extension('_curses', ['_cursesmodule.c'],
+        #                            include_dirs=curses_includes,
+        #                            define_macros=curses_defines,
+        #                            libraries = curses_libs) )
+        # elif curses_library == 'curses' and host_platform != 'darwin':
+        #         # OSX has an old Berkeley curses, not good enough for
+        #         # the _curses module.
+        #     if (self.compiler.find_library_file(lib_dirs, 'terminfo')):
+        #         curses_libs = ['curses', 'terminfo']
+        #     elif (self.compiler.find_library_file(lib_dirs, 'termcap')):
+        #         curses_libs = ['curses', 'termcap']
+        #     else:
+        #         curses_libs = ['curses']
         #
-        # You can upgrade zlib to version 1.1.4 yourself by going to
-        # http://www.gzip.org/zlib/
-        zlib_inc = find_file('zlib.h', [], inc_dirs)
-        have_zlib = False
-        if zlib_inc is not None:
-            zlib_h = zlib_inc[0] + '/zlib.h'
-            version = '"0.0.0"'
-            version_req = '"1.1.3"'
-            if host_platform == 'darwin' and is_macosx_sdk_path(zlib_h):
-                zlib_h = os.path.join(macosx_sdk_root(), zlib_h[1:])
-            with open(zlib_h) as fp:
-                while 1:
-                    line = fp.readline()
-                    if not line:
-                        break
-                    if line.startswith('#define ZLIB_VERSION'):
-                        version = line.split()[2]
-                        break
-            if version >= version_req:
-                if (self.compiler.find_library_file(lib_dirs, 'z')):
-                    if host_platform == "darwin":
-                        zlib_extra_link_args = ('-Wl,-search_paths_first',)
-                    else:
-                        zlib_extra_link_args = ()
-                    exts.append( Extension('zlib', ['zlibmodule.c'],
-                                           libraries = ['z'],
-                                           extra_link_args = zlib_extra_link_args))
-                    have_zlib = True
-                else:
-                    missing.append('zlib')
-            else:
-                missing.append('zlib')
-        else:
-            missing.append('zlib')
+        #     exts.append( Extension('_curses', ['_cursesmodule.c'],
+        #                            define_macros=curses_defines,
+        #                            libraries = curses_libs) )
+        # else:
+        #     missing.append('_curses')
+        #
+        # # If the curses module is enabled, check for the panel module
+        # if (module_enabled(exts, '_curses') and
+        #     self.compiler.find_library_file(lib_dirs, panel_library)):
+        #     exts.append( Extension('_curses_panel', ['_curses_panel.c'],
+        #                            include_dirs=curses_includes,
+        #                            define_macros=curses_defines,
+        #                            libraries = [panel_library] + curses_libs) )
+        # else:
+        #     missing.append('_curses_panel')
+        missing.append('_curses')
+        missing.append('_curses_panel')
 
-        # Helper module for various ascii-encoders.  Uses zlib for an optimized
-        # crc32 if we have it.  Otherwise binascii uses its own.
-        if have_zlib:
-            extra_compile_args = ['-DUSE_ZLIB_CRC32']
-            libraries = ['z']
-            extra_link_args = zlib_extra_link_args
-        else:
-            extra_compile_args = []
-            libraries = []
-            extra_link_args = []
+        # # Andrew Kuchling's zlib module.  Note that some versions of zlib
+        # # 1.1.3 have security problems.  See CERT Advisory CA-2002-07:
+        # # http://www.cert.org/advisories/CA-2002-07.html
+        # #
+        # # zlib 1.1.4 is fixed, but at least one vendor (RedHat) has decided to
+        # # patch its zlib 1.1.3 package instead of upgrading to 1.1.4.  For
+        # # now, we still accept 1.1.3, because we think it's difficult to
+        # # exploit this in Python, and we'd rather make it RedHat's problem
+        # # than our problem <wink>.
+        # #
+        # # You can upgrade zlib to version 1.1.4 yourself by going to
+        # # http://www.gzip.org/zlib/
+        # zlib_inc = find_file('zlib.h', [], inc_dirs)
+        # have_zlib = False
+        # if zlib_inc is not None:
+        #     zlib_h = zlib_inc[0] + '/zlib.h'
+        #     version = '"0.0.0"'
+        #     version_req = '"1.1.3"'
+        #     if host_platform == 'darwin' and is_macosx_sdk_path(zlib_h):
+        #         zlib_h = os.path.join(macosx_sdk_root(), zlib_h[1:])
+        #     with open(zlib_h) as fp:
+        #         while 1:
+        #             line = fp.readline()
+        #             if not line:
+        #                 break
+        #             if line.startswith('#define ZLIB_VERSION'):
+        #                 version = line.split()[2]
+        #                 break
+        #     if version >= version_req:
+        #         if (self.compiler.find_library_file(lib_dirs, 'z')):
+        #             if host_platform == "darwin":
+        #                 zlib_extra_link_args = ('-Wl,-search_paths_first',)
+        #             else:
+        #                 zlib_extra_link_args = ()
+        #             exts.append( Extension('zlib', ['zlibmodule.c'],
+        #                                    libraries = ['z'],
+        #                                    extra_link_args = zlib_extra_link_args))
+        #             have_zlib = True
+        #         else:
+        #             missing.append('zlib')
+        #     else:
+        #         missing.append('zlib')
+        # else:
+        #     missing.append('zlib')
+        #
+        # # Helper module for various ascii-encoders.  Uses zlib for an optimized
+        # # crc32 if we have it.  Otherwise binascii uses its own.
+        # if have_zlib:
+        #     extra_compile_args = ['-DUSE_ZLIB_CRC32']
+        #     libraries = ['z']
+        #     extra_link_args = zlib_extra_link_args
+        # else:
+        #     extra_compile_args = []
+        #     libraries = []
+        #     extra_link_args = []
+
+        extra_compile_args = ['-DUSE_ZLIB_CRC32']
+        zlib_extra_link_args = (os.environ["ZLIB_LIB"],)
+
+        exts.append(Extension('zlib', ['zlibmodule.c'],
+                              # libraries = ['z'],
+                              extra_link_args = zlib_extra_link_args))
+
         exts.append( Extension('binascii', ['binascii.c'],
                                extra_compile_args = extra_compile_args,
-                               libraries = libraries,
-                               extra_link_args = extra_link_args) )
+                               # libraries = libraries,
+                               extra_link_args = zlib_extra_link_args) )
 
-        # Gustavo Niemeyer's bz2 module.
-        if (self.compiler.find_library_file(lib_dirs, 'bz2')):
-            if host_platform == "darwin":
-                bz2_extra_link_args = ('-Wl,-search_paths_first',)
-            else:
-                bz2_extra_link_args = ()
-            exts.append( Extension('_bz2', ['_bz2module.c'],
-                                   libraries = ['bz2'],
-                                   extra_link_args = bz2_extra_link_args) )
-        else:
-            missing.append('_bz2')
+        # # Gustavo Niemeyer's bz2 module.
+        # if (self.compiler.find_library_file(lib_dirs, 'bz2')):
+        #     if host_platform == "darwin":
+        #         bz2_extra_link_args = ('-Wl,-search_paths_first',)
+        #     else:
+        #         bz2_extra_link_args = ()
+        #     exts.append( Extension('_bz2', ['_bz2module.c'],
+        #                            libraries = ['bz2'],
+        #                            extra_link_args = bz2_extra_link_args) )
+        # else:
+        #     missing.append('_bz2')
 
-        # LZMA compression support.
-        if self.compiler.find_library_file(lib_dirs, 'lzma'):
-            exts.append( Extension('_lzma', ['_lzmamodule.c'],
-                                   libraries = ['lzma']) )
-        else:
-            missing.append('_lzma')
+        exts.append(Extension('_bz2', ['_bz2module.c'],
+                              extra_compile_args=["-I", os.environ["BZ2_INCLUDE"]],
+                              extra_link_args=(os.environ["BZ2_LIB"],)))
+
+        # # LZMA compression support.
+        # if self.compiler.find_library_file(lib_dirs, 'lzma'):
+        #     exts.append( Extension('_lzma', ['_lzmamodule.c'],
+        #                            libraries = ['lzma']) )
+        # else:
+        #     missing.append('_lzma')
+
+        exts.append(Extension('_lzma', ['_lzmamodule.c'],
+                              extra_link_args=(os.environ["LZMA_LIB"],),
+                              extra_compile_args=["-I", os.environ["LZMA_INCLUDE"]]))
 
         # Interface to the Expat XML parser
         #
@@ -1668,7 +1706,7 @@ class PyBuildExt(build_ext):
         self.extensions.extend(exts)
 
         # Call the method for detecting whether _tkinter can be compiled
-        self.detect_tkinter(inc_dirs, lib_dirs)
+        # self.detect_tkinter(inc_dirs, lib_dirs)
 
         if '_tkinter' not in [e.name for e in self.extensions]:
             missing.append('_tkinter')
